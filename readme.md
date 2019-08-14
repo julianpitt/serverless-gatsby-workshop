@@ -366,7 +366,7 @@ export default client
 You shouldn't see any any changes but we just want to cconfirm that our site still works
 
 9. Once you've confirmed everything is working, we need to have some way to add the client into the each apge.
-Open `gatsby-browser.js` and add the following:
+Open `gatsby-browser.js` and replace the whole file with the following:
 ```javascript
 const preferDefault = m => (m && m.default) || m;
 exports.wrapRootElement = preferDefault(require(`./wrap-with-provider`));
