@@ -106,21 +106,23 @@ The instruction for this workshop will be broken into different sections to make
 The Parts of the workshop each correspond to a new technology we will be introducing into the project or a body of work for a new feature.
 
 Overview:
-- Part 1: Setting up our gatsby bloc
-- Part 2: Setting up amplify
-- Part 3: Deploying to Amplify and auto build on commit
-- Part 4: Setting up a graphql sources
-- Part 5: Implementing dynamic behaviour
+- Part 1: Setting up our gatsby blog [Gatsby]
+- Part 2: Committing to github [Github]
+- Part 3: Deploying to Amplify and auto build on commit [Amplify]
+- Part 4: Setting up amplify for dynamic content [CI/CD]
+- Part 5: Getting graphql working [AppSync]
 
-### Part 1 - Setting up our gatsby bloc
 
-1. Copy the code from the gatsby blog into a new directory
+### Part 1 - Setting up our gatsby blog
+
+1. Copy the code from the gatsby blog into a new directory by using the gatsby new command. This will copy a starter blog that we will be building off for this workshop.
+You can view information about the available gatsby projects here: [https://www.gatsbyjs.org/starters/?v=2](https://www.gatsbyjs.org/starters/?v=2). For the particular blog that we'll be loading, click here: [https://www.gatsbyjs.org/starters/gatsbyjs/gatsby-starter-blog/](https://www.gatsbyjs.org/starters/gatsbyjs/gatsby-starter-blog/)
 
 ```bash
 gatsby new my-serverless-blog https://github.com/gatsbyjs/gatsby-starter-blog
 ```
 
-2. Change into the new directory and start up your server
+2. Change into the new directory and start up your gatsby project.
 
 ```bash
 cd my-serverless-blog
@@ -134,31 +136,90 @@ http://localhost:8000
 http://localhost:8000/___graphql
 ```
 
-4. Try adding another directory to blog and make sure there's an index.md file in the directory. Confirm your blog updates when you add another entry
+You should see the following
+![](./images/part1/1.png)
 
-5. Now commit this to your github account
+4. Try adding another directory to `/content/blog/` and make sure there's an `index.md` file in the new directory, hint: copy from one of the other directories. Confirm your blog updates when you add another entry. It should update on the fly.
+
+![](./images/part1/2.png)
+
+#### Challenge
+The current blog is set up for the user Kyle Mathews. Now unless you're Kyle Mathews, you probably want to change those details.
+Figure out how gatsby is populating that information and replace it with your own information
+
+
+### Part 2 - Committing to Github
+Before we can deploy our code using Amplify, we need to version our code in a version control system. Github is a remote version control system that uses the GIT  version control system and plays nicley with a number of services, one of those being Amplify.
+
+We first have to locally create a commit Note: The git version control has already been initiated for your project using `gatsby new`.
+
+1. Create a git repo and a local commit for your new project
 ```
-git init -y
 git add .
 git commit -m "Initial commit"
 ```
 
+2. Set up a remote repo by going to `github.com` and logging into your account. Then click the `new` button
 
-### Part 2 - Setting up amplify 
+![](./images/part2/1.png)
 
-Right now, the gatsby blog page is serving content from the file system, specifically the /content/blog directory.
-If you add another directory inside the content blog directory with an md file, a new blog entry will appear on the page.
+3. Give your new blog repo a name, make sure it is set to private and then add the repository
 
+![](./images/part2/2.png)
 
-Lets get our sources using GraphQL instead
-
-1. Install the Gatsby-source-graphql package
-
-```bash
-npm install --save gatsby-source-graphql
+4. Add your remote origin from the page displayed to your local project, then push to github
+```
+git remote add origin {your remote origin}
+git push -u origin master
 ```
 
-### Part 3 - Setting up amplify
+5. Confirm that your code is now public and in Github
+
+
+### Part 3 - Deploying to Amplify and auto build on commit
+
+We want to be able to host our webpage on S3 using the amplify console and not have to manually deploy our site all the time. We'll be using the amplify console to copy our code from github, build our gatsby static pages and then deploy to S3.
+
+1. Navigate to your AWS console, then got to the amplify service. You should see the following
+
+![](./images/part3/1.png)
+
+2. Click on `Get started` under the `Deploy` heading
+
+3. Select `Github`
+
+![](./images/part3/2.png)
+
+4. Select your blog repo and the branch to deploy. then click on `Next`
+
+![](./images/part3/3.png)
+
+5. Review that all the settings are correct, then click on `Save and Deploy`
+
+![](./images/part3/4.png)
+
+6. You should hopefully see the following screen. Wait until all the steps are green.
+
+![](./images/part3/5.png)
+
+7. Click on the link under your website image to open your newly deployed blog site :D
+
+![](./images/part1/2.png)
+
+8. Now we'll make sure we can add more posts. Go back to your codebase and create a new blog post. 
+
+9. Create a new commit and push it to github.
+```
+git add .
+git commit -m "New blog post"
+git push
+```
+
+
+### Part 4 - Setting up amplify for dynamic content
+
+We want to keep our current setup as it's all pretty sweet. 
+But what if we wanted to add some dynamic content to our blog, like a comment section on each post?
 
 1. We want to make sure that we are able to post the site to amplify.
 To do this, we can use the amplfy command line utility
@@ -178,7 +239,7 @@ This will ask you a number of questions. Make sure you choose as below
 Please tell us about your project
 ? What javascript framework are you using: react
 ? Source Directory Path:  src
-? Distribution Directory Path: build
+? Distribution Directory Path: public
 ? Build Command:  npm run-script build
 ? Start Command: npm run-script start
 
@@ -207,7 +268,7 @@ Which will then guide you through creating the schema, so please choose as follo
 ? Choose an authorization type for the API: API key
 ? Do you have an annotated GraphQL schema?: No
 ? Do you want a guided schema creation?: Yes
-? What best describes your project: One-to-many relationship (e.g., “Blogs” with “Posts” and “Comments”)
+? What best describes your project: Single object with fields (e.g., “Todo” with ID, name, description) 
 ? Do you want to edit the schema now?: No
 
 GraphQL schema compiled successfully.
@@ -225,16 +286,11 @@ Some next steps:
 We need to edit this file so it looks like the file below
 
 ```graphql
-type Post @model {
-  id: ID!
-  title: String!
-  content: String!
-  comments: [Comment] @connection(name: "PostComments")
-}
 type Comment @model {
   id: ID!
   content: String
-  post: Post @connection(name: "PostComments")
+  postPath: String
+  timestamp: AWSDateTime
 }
 ```
 
@@ -246,6 +302,7 @@ amplify push
 
 This will ask a few more questions:
 ```bash
+? Are you sure you want to continue? (Y/n): Y
 ? Do you want to generate code for your newly created GraphQL API: Yes
 ? Choose the code generation language target: javascript
 ? Enter the file name pattern of graphql queries, mutations and subscriptions: src/graphql/**/*.js
@@ -255,86 +312,11 @@ This will ask a few more questions:
 
 And then it will deploy your API
 
-5. Update the current gatsby config file to point to our new datasource
-Open up `gatsby-config.js` and replace this:
+5. For us to use graphql in our codebase, we need to use a client that will allow us to perform
+graphql queries on the client side. We'll be using something called Apollo Client and pass in our amplify config.
 
-```javascript
-{
-    resolve: `gatsby-source-filesystem`,
-    options: {
-    path: `${__dirname}/content/blog`,
-    name: `blog`,
-    },
-},
-```
+Create a new file in `/src/utils` called `client.js` and paste the following in
 
-with this:
-
-```javascript
-{
-    resolve: `gatsby-source-graphql`,
-    options: {
-        typeName: `blog`,
-        fieldName: `blog`,
-        url: '',
-        headers: {
-            'x-api-key': ''
-        }
-    },
-},
-```
-
-You will then need to populate the `url` and `x-api-key` fields with the values found in `src/aws-exports.js`
-populate the `url` with the value of `aws_appsync_graphqlEndpoint` in the exports file and
-populate the `x-apli-key` with the value of `aws_appsync_apiKey` in the exports file
-
-Now try running the frontend with `npm start`
-You should see nothing appearing but your bio
-
-### Part 4 - Getting graphql working
-
-1. Adding mock data to your site
-Now that we have added appsync as a data source, we can test it out by adding some mock data into our database
-Open up your AWS console, then navigate to AWS AppSync, click on your api, then click on Queries
-In the Query box, type out the following:
-```gql
-mutation CreatePost($input: CreatePostInput!) {
-  createPost(input: $input) {
-    id
-    title
-    slug
-    content
-    excerpt
-    date
-  }
-}
-```
-And set the Query Variables box with the following:
-```json
-{
-  "input": {
-    "title": "Hello world",
-    "slug": "hello-world",
-    "content": "<h1>this is some content</h1>",
-    "excerpt": "this is some content",
-    "date": "12-08-2019"
-  }
-}
-```
-Then click play.
-
-Once this worked you should see a screen like the following:
-
-Now go back to your gatsby page and refresh
-You should now see a new blog entry. But when you click on it.... the page crashes :'(
-
-2. Adding dynamic pages for blog posts
-We first need to install the dependencies for apollo client
-Apollo client will allow us to call our graphql endpoint
-```
-npm install --save apollo-client apollo-link-http apollo-link-context apollo-cache-inmemory graphql react-apollo
-``` 
-Now we need to create a client in utls
 ```javascript
 //https://www.apollographql.com/docs/react/recipes/authentication/
 import AppSyncConfig from '../aws-exports';
@@ -364,24 +346,225 @@ const client = new ApolloClient({
 
 export default client
 ```
+This file creates a graphql client pulling in the values from the aws-exports file created by amplify cl
 
-Once we have the client set up, we can now call our AppSync api but we can inject this client on every page if needed using the 
-gatsby-browser.js file
-Open up this file and paste the following
+6. Before we can run our code we need to install the dependencies in this code sample
+```bash
+npm install --save apollo-client apollo-link-http apollo-link-context apollo-cache-inmemory graphql react-apollo graphql-tag isomorphic-fetch
+```
+7. Now try running the frontend with `npm start`
+You shouldn't see any any changes but we just want to cconfirm that our site still works
+
+8. Once you've confirmed everything is working, we need to have some way to add the client into the page
+open gatsby-browser.js and add the following:
 ```javascript
-// custom typefaces
+const preferDefault = m => (m && m.default) || m;
+exports.wrapRootElement = preferDefault(require(`./wrap-with-provider`));
+```
+Then create another file called `gatsby-ssr.js` and add the following
+```javascript
+require(`isomorphic-fetch`);
+
+const preferDefault = m => (m && m.default) || m;
+exports.wrapRootElement = preferDefault(require(`./wrap-with-provider`));
+```
+
+Finally, create a file called `wrap-with-provider.js` and add the following
+
+```js
 import "typeface-montserrat"
 import "typeface-merriweather"
 import React from 'react';
 import { ApolloProvider } from 'react-apollo';
-import { client } from './src/utils/client';
+import client from './src/utils/client';
 
-export const wrapRootElement = ({ element }) => (
-  <ApolloProvider client={client}>
-    {element}
-  </ApolloProvider>
+export default ({ element }) => (
+    <ApolloProvider client={client}>
+        {element}
+    </ApolloProvider>
 );
 ```
+The code in `gatsby-browser.js` will be included on every page.
+We're wrapping the whole react element at the root level with our apollo provider and passing in the client
+we created earlier.
+
+### Part 5 - Getting graphql working Please refresh when you get here
+
+1. Adding mock data to your site
+Now that we have added appsync as a data source, we can test it out by adding some mock data into our database
+Open up your AWS console, then navigate to AWS AppSync, click on your api, then click on Queries
+In the Query box, type out the following:
+```gql
+mutation { 
+createComment(input: {
+    content:"This is cool"
+    postPath:"hello-world"
+    timestamp: "2019-08-14T16:00:00-07:00"
+  }) {
+    content
+    postPath
+    timestamp
+  }
+}
+```
+Then click play.
+
+Once this worked you should see a screen like the following:
+
+
+2. Now to test out our query that we'll be running per post, clear the editor and past and run the following
+```gql
+query {
+  listComments(
+    filter:{ postPath:{
+        eq:"hello-world"
+    }}
+  ) {
+    items {
+      id
+      timestamp
+      content
+      postPath
+    }
+  }
+}
+```
+This should show the comment you just added
+
+3. Let's call the appropriate query for the comment section
+Open `src/templates/blog-post.js`
+
+find the section
+```jsx
+<hr
+  style={{
+    marginBottom: rhythm(1),
+  }}
+/>
+<Bio />
+```
+and add the following between the `hr` close tage and `<Bio />` element
+```jsx
+<hr
+  style={{
+    marginBottom: rhythm(1),
+  }}
+/>
+
+<div style={{ margin: '10px 0 60px 0' }}>
+  <h3>Comments:</h3>
+  <Query query={GET_POST_COMMENTS} variables={{ postPath: post.fields.slug.replace(/\//g, '') }}>
+    {({ loading, error, data }) => {
+      if (loading) {
+        return (<div>Loading...</div>);
+      }
+      if (error) {
+        console.error(error);
+        return (<div>Error!</div>);
+      }
+      const comments = data.listComments.items;
+      return (
+        comments.length <= 0 ?
+          <div>No comments</div>
+          :
+          (
+            <ul>
+              {comments.map(comment => <Comment comment={comment} />)}
+            </ul>
+          )
+      )
+    }}
+  </Query>
+</div>
+
+<Bio />
+```
+
+4. We need to get the slug out of the page query so we can use it in our graphql query to appsync.
+Change the bottom query to include the slug of the page
+```javascript
+export const pageQuery = graphql`
+  query BlogPostBySlug($slug: String!) {
+    site {
+      siteMetadata {
+        title
+        author
+      }
+    }
+    markdownRemark(fields: { slug: { eq: $slug } }) {
+      id
+      excerpt(pruneLength: 160)
+      html
+      fields {
+        slug
+      }
+      frontmatter {
+        title
+        date(formatString: "MMMM DD, YYYY")
+        description
+      }
+    }
+  }
+`
+```
+
+5. Underneath the import statement for gatsby add the following two imports 
+```javascript
+import gql from 'graphql-tag';
+import { Query } from 'react-apollo';
+import Comment from '../components/comment';
+```
+
+6. underneath all our imports add the query we want to run
+```javascript
+const GET_POST_COMMENTS = gql`
+  query GetCommentsForPost($postPath: String!){
+    listComments(
+      filter:{ postPath:{
+          eq: $postPath
+      }}
+    ) {
+      items {
+        id
+        timestamp
+        content
+        postPath
+      }
+    }
+  }
+`;
+```
+
+7. We need to also create a comment component that will render each comment
+Create a file called `comment.js` in the `src/components` directory 
+and add the following
+```js
+import React from "react";
+import * as dateformat from "dateformat";
+
+const Comment = ({ comment }) => {
+    const { content, timestamp } = comment;
+    return (
+        <div style={{ borderLeft: '2px solid #ddd', marginBottom: 10, paddingLeft: 5 }}>
+            <q>
+                {content}
+            </q>
+            <small> at {dateformat(timestamp, 'dddd, mmmm dS, yyyy, h:MM:ss TT')}</small>
+        </div>
+    )
+}
+
+export default Comment;
+```
+
+8. Now click load your site again and go to any blog post that isn't 'Hello world'
+You should see the default message for when there are no posts
+
+9. Click on the Hello world blog post and you should now see the comments
+
+10. Now before we can commit, we need to remove `aws-exports.js` from the `.gitignore` file. Then commit, deploy & enjoy
+
+
 
 ### Notes
 
