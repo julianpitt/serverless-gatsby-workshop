@@ -326,7 +326,7 @@ graphql queries. We'll be using something called `Apollo Client` and pass in our
 First install the dependencies.
 
 ```bash
-npm install --save apollo-client apollo-link-http apollo-link-context apollo-cache-inmemory graphql react-apollo graphql-tag isomorphic-fetch
+npm install --save apollo-client apollo-link-http apollo-link-context apollo-cache-inmemory graphql react-apollo graphql-tag isomorphic-fetch dateformat
 ```
 
 7. Create a new file in `/src/utils` called `client.js` and paste the following in
